@@ -33,5 +33,3 @@ test(generalise_specs_constant) :-
     OP = [answer, var(_)].
 
 :- end_tests(generalise).
-
-:- run_tests(generalise).

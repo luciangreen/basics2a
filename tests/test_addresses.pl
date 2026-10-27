@@ -43,5 +43,3 @@ test(term_addresses_includes_all) :-
     member([2]-b, Pairs).
 
 :- end_tests(addresses).
-
-:- run_tests(addresses).

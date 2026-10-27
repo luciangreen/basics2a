@@ -19,5 +19,3 @@ test(decompose_chars_spec) :-
     decompose_chars_spec(in(ab)-out(ba), in([a,b])-out([b,a])).
 
 :- end_tests(chars).
-
-:- run_tests(chars).

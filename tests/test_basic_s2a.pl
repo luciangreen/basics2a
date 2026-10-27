@@ -178,6 +178,19 @@ test(verify_training) :-
     build_algorithm_ir(swap, NS, [], IR),
     verify_algorithm(IR, NS, passed).
 
-:- end_tests(basic_s2a).
+test(structured_specification) :-
+    Specs = [
+        [[input,[1,2]],[output,[2,1]]],
+        [[input,[3,4]],[output,[4,3]]]
+    ],
+    spec_to_basic(swap, Specs, Basic),
+    sub_atom(Basic, _, _, _, 'Output(1) = Input(2)'),
+    sub_atom(Basic, _, _, _, 'Output(2) = Input(1)').
 
-:- run_tests(basic_s2a).
+test(report_api) :-
+    spec_to_basic_report([[1,2]-[2,1],[3,4]-[4,3]], Report),
+    Report = report(examples(2), input_pattern(_), output_pattern(_),
+                    mappings(Mappings), constants([]), verification(passed)),
+    sort(Mappings, [[1]-[2],[2]-[1]]).
+
+:- end_tests(basic_s2a).

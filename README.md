@@ -53,7 +53,7 @@ examples → structural pattern → input/output address relationships → BASIC
 
 ## Installation
 
-Requires [SWI-Prolog](https://www.swi-prolog.org/) (tested with 9.0.4).
+Requires [SWI-Prolog](https://www.swi-prolog.org/) 9.0.4 or newer.
 
 Clone or download the repository, then load in SWI-Prolog:
 
@@ -65,6 +65,8 @@ swipl
 ```prolog
 ?- [basic_s2a].
 ```
+
+Scripts can load the API with `use_module(basic_s2a)`.
 
 ---
 
@@ -89,7 +91,19 @@ As above with explicit options.  Supported options:
 
 ### `spec_to_basic_report(+Specs, -Report)`
 
-Returns a structured report explaining why the transformation was inferred.
+Returns the example count, generalised input/output patterns, input-to-output
+address mappings, output constants, and whether the inferred IR reproduced
+the training examples.
+
+```prolog
+?- spec_to_basic_report([[1,2]-[2,1],[3,4]-[4,3]], Report).
+```
+
+The report has the form
+`report(examples(N), input_pattern(IP), output_pattern(OP), mappings(Maps),
+constants(Constants), verification(Status))`. Each mapping is an
+input-address/output-address pair; constants are output-address/value pairs.
+Verification is `passed` or `unverified`.
 
 ---
 
@@ -197,9 +211,9 @@ END SUB
 
 ```prolog
 ?- spec_to_basic(swap,
-       [ [[input,[['A',[1,2]]]],[output,[['B',[2,1]]]]],
-         [[input,[['A',[3,4]]]],[output,[['B',[4,3]]]]],
-         [[input,[['A',[5,6]]]],[output,[['B',[6,5]]]]]
+       [ [[input,[1,2]],[output,[2,1]]],
+         [[input,[3,4]],[output,[4,3]]],
+         [[input,[5,6]],[output,[6,5]]]
        ],
        [chars(off),dialect(generic),verify(on)],
        Basic),
@@ -223,44 +237,51 @@ Turn off with `verify(off)`.
 
 ## Running Tests
 
+Run all PlUnit suites from the repository root:
+
 ```sh
-cd tests
-swipl -g "halt(0)" -l test_basic_s2a.pl
-swipl -g "halt(0)" -l test_addresses.pl
-swipl -g "halt(0)" -l test_generalise.pl
-swipl -g "halt(0)" -l test_chars.pl
-swipl -g "halt(0)" -l test_basic_generator.pl
+./tests/run_tests.sh
 ```
+
+SWI-Prolog must be available on `PATH`. To run one suite, for example:
+`swipl -q -s tests/test_basic_s2a.pl -g "(run_tests(basic_s2a) -> halt(0) ; halt(1))"`.
+Other suite names are `addresses`, `generalise`, `chars`, and
+`basic_generator`. Tests cover parsing/addressing, generalisation,
+correspondence, character decomposition, IR verification, reports, and BASIC
+source generation. They assert generated source text; they do not compile or
+execute it in a BASIC runtime.
 
 ---
 
 ## Running Examples
 
 ```sh
-swipl -g "halt(0)" -l examples/swap.pl
-swipl -g "halt(0)" -l examples/nested.pl
-swipl -g "halt(0)" -l examples/constants.pl
-swipl -g "halt(0)" -l examples/strings.pl
+swipl -q -s examples/swap.pl
+swipl -q -s examples/nested.pl
+swipl -q -s examples/constants.pl
+swipl -q -s examples/strings.pl
 ```
 
 ---
 
 ## Generated BASIC Dialect
 
-The `dialect(generic)` backend produces portable BASIC using:
+The `dialect(generic)` backend emits a portable BASIC-like subroutine using:
 
 - `SUB Name(Input(), Output())` — array arguments
 - `Output(N) = Input(M)` — array element assignment
 - `Output(N) = "string"` — string constant
 - `END SUB`
 
-String operations (used internally when `chars(on)` is active):
+Scalar examples use `SUB Name(Input, Output)` and `Output = Input`. Nested
+addresses are emitted as multidimensional references. The backend emits
+address assignments only; it does not emit declarations, allocation, runtime
+support, or a program that invokes the generated subroutine.
 
-| Operation | Meaning |
-|-----------|---------|
-| `MID$(s$, start, len)` | Extract substring |
-| `LEN(s$)` | String length |
-| `+` | String concatenation |
+`chars(on)` decomposes atoms and strings into character terms before inference.
+Generated code still uses the generic array-argument convention (for example
+`Input(1)`); it does not generate BASIC string expressions or reconstruct a
+scalar string.
 
 ---
 
@@ -268,10 +289,22 @@ String operations (used internally when `chars(on)` is active):
 
 - Structural pattern discovery is positional (address-based); it does not
   discover arithmetic or conditional relationships.
-- Character mode (`chars(on)`) works on top-level atoms/strings; deeply nested
-  string manipulation is not yet supported.
-- Only the `dialect(generic)` backend is implemented in v1.
+- Character mode performs Prolog-side decomposition, but native BASIC string
+  handling and string recombination are not implemented.
+- Only `dialect(generic)` is implemented. Dialect-specific declarations,
+  allocation, and executable program scaffolding are not generated.
+- Input and output structures are inferred positionally; incompatible shapes
+  or insufficient evidence may not generalise as intended.
 - Parallel execution is not generated (sequential BASIC only).
+
+## Remaining work
+
+The positional synthesis pipeline and generic source emitter are implemented.
+Useful follow-on features include native BASIC string input/output and
+recombination, additional dialect backends, shape/size declarations and
+executable program scaffolding, stronger handling of shape-changing examples,
+and arithmetic or conditional rule inference. These are not currently
+implemented or promised by the public API.
 
 ---
 

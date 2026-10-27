@@ -16,9 +16,9 @@ main :-
 
     writeln('=== Structured Input Form ==='),
     spec_to_basic(swap,
-        [ [[input,[['A',[1,2]]]],[output,[['B',[2,1]]]]],
-          [[input,[['A',[3,4]]]],[output,[['B',[4,3]]]]],
-          [[input,[['A',[5,6]]]],[output,[['B',[6,5]]]]]
+        [ [[input,[1,2]],[output,[2,1]]],
+          [[input,[3,4]],[output,[4,3]]],
+          [[input,[5,6]],[output,[6,5]]]
         ],
         [chars(off),dialect(generic),verify(on)],
         Basic2),

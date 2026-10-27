@@ -1,76 +1,58 @@
-# PROGRAM REQUIREMENTS — BASIC Spec to Algorithm
+# BASIC Spec to Algorithm — implementation status
 
-This file records the requirements satisfied by this implementation.
+This document records the features currently implemented, their boundaries,
+and planned follow-up work. `README.md` contains API usage and runnable
+commands.
 
-## Implemented Requirements
+## Implemented
 
-| Req | Status | Notes |
-|-----|--------|-------|
-| 1. Project Name | ✓ | basic-spec-to-algorithm, SWI-Prolog |
-| 2. Purpose | ✓ | Infer BASIC algorithm from I/O examples |
-| 3. Core S2A Principle | ✓ | Infers from examples, not optimises |
-| 4. Public API `spec_to_basic/3,4` | ✓ | Implemented |
-| 4. Options `chars/dialect/verify` | ✓ | All supported |
-| 5. Spec Representation (structured+simple) | ✓ | Both forms accepted |
-| 6. Structural Generalisation | ✓ | Constants vs varying positions |
-| 7. Variable Discovery | ✓ | Changing positions become variables |
-| 8. Subterm Address Correspondence | ✓ | addresses.pl |
-| 9. Nested Structures | ✓ | Multi-level addressing |
-| 10. Pattern Discovery | ✓ | generalise.pl + correspondence.pl |
-| 11. Character-Level Mode | ✓ | `chars(on)` option |
-| 12. Character Recombination | ✓ | chars.pl |
-| 13. Output Constants | ✓ | `constant(Addr,Val)` instruction |
-| 14. Repeated Input Variables | ✓ | Multiple copy instructions to same input addr |
-| 15. Omitted Input Components | ✓ | Unused input addresses generate no instructions |
-| 16. Generated BASIC | ✓ | SUB/END SUB, readable |
-| 17. BASIC Arrays | ✓ | `SUB Name(Input(), Output())` convention |
-| 18. Scalar Example | ✓ | `Output = Input` for scalars |
-| 19. Reordering Example | ✓ | Swap works |
-| 20. Constant and Variable Example | ✓ | `Output(1) = "answer"` |
-| 21. Intermediate Representation | ✓ | `algorithm(Name, IShape, OShape, Instructions)` |
-| 22. BASIC Backend | ✓ | `basic_generate/2,3` |
-| 23. Architecture | ✓ | Matches suggested structure |
-| 24. Internal Predicates | ✓ | All required predicates present |
-| 25. Verification | ✓ | `verify_algorithm/3` |
-| 26. Unseen-Input Tests | ✓ | Tests confirm structural mapping |
-| 27. Ambiguous Specifications | ✓ | Structural mappings preferred |
-| 28. Insufficient Evidence | ✓ | Warning printed for 1 example |
-| 29. Conflicting Specifications | ✓ | `error(conflicting_specifications(...))` |
-| 30. Determinism of Synthesis | ✓ | Same specs → same result |
-| 31–35. No Starlog/Loop2/PLOP/Detlog/Piglog2 | ✓ | Not implemented |
-| 36. Scope Boundary | ✓ | Only synthesis |
-| 37. Test Categories | ✓ | All 25 test categories covered |
-| 38. End-to-End Query | ✓ | Works |
-| 39. Character Example | ✓ | `chars(on)` reversal |
-| 40. Reporting | ✓ | `spec_to_basic_report/2` |
-| 41. Human Readability | ✓ | Input/Output naming |
-| 42. Error Handling | ✓ | Structured error terms |
-| 43. README | ✓ | README.md |
-| 44. GitHub Agent Workflow | ✓ | Incremental, tested at each stage |
-| 45. Implementation Stages | ✓ | All 10 stages completed |
-| 46. Acceptance Criterion | ✓ | Swap query works end-to-end |
+| Area | Behavior |
+|------|----------|
+| Public API | `spec_to_basic/3`, `spec_to_basic/4`, and `spec_to_basic_report/2` |
+| Specification formats | Simple `Input-Output` pairs, one-pair nested lists, and structured `input`/`output` terms |
+| Inference | Positional structural generalisation and input/output address correspondence |
+| Values | Scalars, lists, nested lists, atoms, strings, numbers, and mixed terms |
+| Transformations | Copy, reorder, duplicate, omit, and output constants |
+| Character preprocessing | Optional Prolog-side atom/string character decomposition via `chars(on)` |
+| Intermediate representation | `algorithm(Name, InputShape, OutputShape, Instructions)` with `copy/2` and `constant/2` instructions |
+| Source generation | Generic BASIC-like `SUB`/`END SUB` source, scalar assignments, array references, and constants |
+| Verification | Executes the IR against the training examples by default; `verify(off)` disables it |
+| Reporting and errors | Structured synthesis report, malformed/empty input errors, conflicting correspondence errors, and verification errors |
 
-## Algorithm IR Instructions
+The accepted options are `chars(off)` (default), `chars(on)`,
+`dialect(generic)` (default), `verify(on)` (default), and `verify(off)`.
+Character decomposition changes the Prolog terms used for inference; generated
+source continues to use the generic array convention and does not reconstruct
+a BASIC string.
 
-| Instruction | Meaning |
-|-------------|---------|
-| `copy(InputAddr, OutputAddr)` | Copy input value at address to output |
-| `constant(OutputAddr, Value)` | Place fixed value at output address |
+## Not implemented
 
-## Error Terms
+| Feature | Status |
+|---------|--------|
+| Arithmetic or conditional rule inference | Not implemented; synthesis is positional |
+| Native BASIC string input/output and recombination | Not implemented |
+| Non-generic BASIC dialects | Not implemented |
+| Declarations, array allocation, main program, or runtime integration | Not generated |
+| Parallel execution | Not implemented |
+| Other Spec-to-Algorithm projects (Starlog, Loop2, PLOP, Detlog, Piglog2) | Outside this repository's scope |
+
+Shape-changing or sparsely demonstrated examples may not generalise as
+intended. Generated BASIC source is validated as text and its IR is tested
+against the provided examples; no external BASIC compiler/runtime is used.
+
+## Intermediate representation and errors
 
 | Term | Meaning |
 |------|---------|
-| `error(no_specs)` | Empty specification list |
-| `error(malformed_spec(Spec))` | Spec does not match any accepted form |
-| `error(conflicting_specifications(Input, Out1, Out2))` | Same input maps to two outputs |
-| `error(verification_failed(Result))` | IR fails on training examples |
+| `copy(InputAddr, OutputAddr)` | Copy the input value at an address to an output address |
+| `constant(OutputAddr, Value)` | Put a fixed value at an output address |
+| `error(no_specs)` | No examples were supplied |
+| `error(malformed_spec(Spec))` | A specification does not match an accepted form |
+| `error(conflicting_specifications(Input, Out1, Out2))` | Conflicting outputs were inferred for an input |
+| `error(verification_failed(Result))` | The generated IR did not reproduce the training examples |
 
-## Generated BASIC String Operations
+## Tests
 
-When `chars(on)` is active, the following BASIC string operations may be
-referenced:
-
-- `MID$(s$, start, len)` — extract a substring
-- `LEN(s$)` — length of string
-- `+` — string concatenation
+Run all suites from the repository root with `./tests/run_tests.sh`. The
+individual PlUnit files under `tests/` cover addresses, generalisation,
+character decomposition, source generation, and end-to-end synthesis.

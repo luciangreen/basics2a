@@ -36,5 +36,3 @@ test(generate_end_sub) :-
     sub_atom(Source, _, _, _, 'END SUB').
 
 :- end_tests(basic_generator).
-
-:- run_tests(basic_generator).

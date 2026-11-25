@@ -193,4 +193,14 @@ test(report_api) :-
                     mappings(Mappings), constants([]), verification(passed)),
     sort(Mappings, [[1]-[2],[2]-[1]]).
 
+% Reversal over lists of different lengths needs a loop over the length.
+test(reverse_over_lengths_is_a_loop) :-
+    spec_to_basic(rev, [[1,2]-[2,1], [1,2,3]-[3,2,1]], Basic),
+    sub_atom(Basic, _, _, _, 'FOR I = 1 TO N'),
+    sub_atom(Basic, _, _, _, 'Output(I) = Input(N - I + 1)').
+
+% Specs that neither mapping nor loop covers still fail verification.
+test(unfit_specs_still_fail, [throws(error(verification_failed(_)))]) :-
+    spec_to_basic(bad, [[1,2]-[2,2], [1,2,3]-[3,3,3]], _).
+
 :- end_tests(basic_s2a).

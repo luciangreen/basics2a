@@ -43,11 +43,38 @@ spec_to_basic(Name, Specs, Options, Basic) :-
         WorkSpecs = NormSpecs,
         IROptions = ResolvedOpts
     ),
-    build_algorithm_ir(Name, WorkSpecs, IROptions, IR),
-    ( member(verify(on), ResolvedOpts) ->
-        verify_specs(WorkSpecs, IR)
-    ; true ),
-    basic_generate(IR, ResolvedOpts, Basic).
+    (   catch(( build_algorithm_ir(Name, WorkSpecs, IROptions, IR),
+                ( member(verify(on), ResolvedOpts) -> verify_specs(WorkSpecs, IR) ; true ),
+                basic_generate(IR, ResolvedOpts, Basic0) ),
+              Error, true)
+    ->  Outcome = done(Error, Basic0)
+    ;   Outcome = failed
+    ),
+    (   Outcome = done(E, B), var(E)
+    ->  Basic = B
+    ;   % Position-to-position mappings cannot cover lists of different
+        % lengths; try a loop over the length (reverse, copy) before giving up.
+        length_loop(Name, WorkSpecs, Basic)
+    ->  true
+    ;   Outcome = done(E, _)
+    ->  throw(E)
+    ;   fail
+    ).
+
+% length_loop(+Name, +Specs, -Basic): every example's output is its input
+% reversed (or copied), and the inputs are flat lists of at least two
+% different lengths, so one loop over the length covers them all.
+length_loop(Name, Specs, Basic) :-
+    maplist([in(I)-out(_), L]>>(is_list(I), length(I, L)), Specs, Lengths),
+    sort(Lengths, [_, _|_]),
+    (   forall(member(in(I)-out(O), Specs), reverse(I, O)) -> Kind = reverse
+    ;   forall(member(in(I)-out(O), Specs), I == O) -> Kind = copy
+    ),
+    upcase_atom(Name, Up),
+    ( Kind == reverse -> Src = 'Input(N - I + 1)' ; Src = 'Input(I)' ),
+    format(atom(Basic),
+           'SUB ~w(Input(), Output())~n    N = UBOUND(Input)~n    FOR I = 1 TO N~n        Output(I) = ~w~n    NEXT I~nEND SUB',
+           [Up, Src]).
 
 resolve_options(Opts, Resolved) :-
     default_options(Defaults),

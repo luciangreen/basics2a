@@ -288,7 +288,10 @@ scalar string.
 ## Limitations
 
 - Structural pattern discovery is positional (address-based); it does not
-  discover arithmetic or conditional relationships.
+  discover arithmetic or conditional relationships. When flat lists of
+  different lengths are all reversed or all copied, which no positional
+  mapping covers, a loop over the length is generated instead
+  (`FOR I = 1 TO N`, `Output(I) = Input(N - I + 1)`).
 - Character mode performs Prolog-side decomposition, but native BASIC string
   handling and string recombination are not implemented.
 - Only `dialect(generic)` is implemented. Dialect-specific declarations,
